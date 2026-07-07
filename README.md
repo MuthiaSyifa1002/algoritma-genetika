@@ -1,0 +1,2 @@
+# algoritma-genetika
+Muthia Syifa Faradhia_105841121924_4G_Rekayasa Komputasional
