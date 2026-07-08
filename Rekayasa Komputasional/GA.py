@@ -1,16 +1,18 @@
 import random
 
+random.seed(42)
+
 KAMUS = {
-    "inaaa": "Ibu",
-    "ambe": "Bapak",
-    "moico": "Bagus",
-    "miano": "Orang",
-    "anaa": "Anak",
-    "moko": "Mau",
-    "osie": "Sana",
-    "wuta": "Tanah",
-    "urai": "Adik",
-    "die": "Sini"
+    "Inaaa": "Ibu",
+    "Ambe": "Bapak",
+    "Moico": "Bagus",
+    "Miano": "Orang",
+    "Anaa": "Anak",
+    "Moko": "Mau",
+    "Osie": "Jangan",
+    "Wita": "Tanah",
+    "Tuai": "Adik",
+    "Die": "Sini"
 }
 
 ALFABET = "abcdefghijklmnopqrstuvwxyz"
@@ -29,13 +31,14 @@ detail_crossover = []
 anak_crossover = []
 detail_mutasi = []
 anak_mutasi = []
+riwayat = []
 
 
 def buat_populasi_awal():
     global populasi, generasi
     populasi = ["".join(random.choice(ALFABET) for _ in range(len(target)))
                 for _ in range(UKURAN_POPULASI)]
-    generasi = 1
+    generasi = 0
 
 
 def hitung_fitness_individu(individu):
@@ -255,48 +258,50 @@ def menu_1():
 def menu_2():
     global target
     kata = input("Masukkan kata yang dicari: ").lower().strip()
-    if kata in KAMUS:
-        target = kata
-        buat_populasi_awal()
-        evaluasi_fitness(cetak=False)
-        print(f"Kata '{kata}' ditemukan di kamus. Artinya: {KAMUS[kata]}")
-        print(f"Target GA diset: '{target}' (panjang kromosom = {len(target)})")
-        print("Populasi awal generasi 1 telah dibangkitkan.")
-        return
+    for moro, indo in KAMUS.items():
+        if kata == moro.lower():
+            target = moro.lower()
+            buat_populasi_awal()
+            evaluasi_fitness(cetak=False)
+            print(f"Kata '{moro}' ditemukan di kamus. Artinya: {indo}")
+            print(f"Target GA diset: '{target}' (panjang kromosom = {len(target)})")
+            print("Populasi awal (generasi 0) telah dibangkitkan.")
+            return
     for moro, indo in KAMUS.items():
         if kata == indo.lower():
-            target = moro
+            target = moro.lower()
             buat_populasi_awal()
             evaluasi_fitness(cetak=False)
             print(f"Arti '{indo}' ditemukan. Kata Moronene: '{moro}'")
             print(f"Target GA diset: '{target}' (panjang kromosom = {len(target)})")
-            print("Populasi awal generasi 1 telah dibangkitkan.")
+            print("Populasi awal (generasi 0) telah dibangkitkan.")
             return
     print("Kata tidak ditemukan di dalam kamus.")
 
 
 def menu_3():
+    global riwayat
     if not target:
         print("Peringatan: tentukan kata target dulu di menu 2!")
         return
     buat_populasi_awal()
     evaluasi_fitness(cetak=False)
+    riwayat = []
     print(f"\nMENJALANKAN ALGORITMA GENETIKA | Target: {target}")
-    print("Populasi awal:")
+    print("Populasi awal (Generasi 0):")
     for i, ind in enumerate(populasi, 1):
         print(f"  I{i} : {ind}")
-    print("\nProses evolusi (dicetak saat fitness terbaik meningkat):")
-    fitness_terbaik = -1
+    print("\nIndividu terbaik tiap generasi:")
     while True:
+        riwayat.append(list(populasi))
         nilai_max = max(fitness)
         individu_terbaik = populasi[fitness.index(nilai_max)]
-        if nilai_max > fitness_terbaik:
-            fitness_terbaik = nilai_max
-            print(f"Generasi {generasi:<4} | Terbaik: {individu_terbaik} | Fitness: {nilai_max:.4f}")
+        print(f"Generasi {generasi:<4} | Terbaik: {individu_terbaik} | Fitness: {nilai_max:.4f}")
         if nilai_max == 1.0:
+            arti = next(v for k, v in KAMUS.items() if k.lower() == individu_terbaik)
             print(f"\nSOLUSI DITEMUKAN pada generasi {generasi}!")
             print(f"Kata Moronene : {individu_terbaik}")
-            print(f"Arti          : {KAMUS[individu_terbaik]}")
+            print(f"Arti          : {arti}")
             break
         seleksi_roulette(cetak=False)
         crossover(cetak=False)
@@ -304,10 +309,27 @@ def menu_3():
         bentuk_generasi_baru(cetak=False)
 
 
+def pilih_generasi():
+    global populasi, generasi
+    if not riwayat:
+        return
+    maks = len(riwayat) - 1
+    pilih = input(f"Tampilkan generasi ke berapa? (0-{maks}, Enter = generasi terakhir): ").strip()
+    if pilih == "":
+        return
+    if not pilih.isdigit() or int(pilih) > maks:
+        print(f"Masukkan angka 0 sampai {maks}. Dipakai generasi terakhir.")
+        return
+    generasi = int(pilih)
+    populasi = list(riwayat[generasi])
+    evaluasi_fitness(cetak=False)
+
+
 def menu_4():
     if not populasi:
         print("Peringatan: populasi kosong, cari kata dulu di menu 2!")
         return
+    pilih_generasi()
     print(f"\nPOPULASI GENERASI {generasi} (Target: {target})")
     print("-" * 40)
     for i, ind in enumerate(populasi, 1):
@@ -318,6 +340,7 @@ def menu_5():
     if not populasi:
         print("Peringatan: populasi kosong, cari kata dulu di menu 2!")
         return
+    pilih_generasi()
     evaluasi_fitness(cetak=True)
 
 
@@ -325,6 +348,7 @@ def menu_6():
     if not fitness:
         print("Peringatan: hitung fitness dulu di menu 5!")
         return
+    pilih_generasi()
     seleksi_roulette(cetak=True)
 
 
@@ -349,11 +373,32 @@ def menu_9():
     bentuk_generasi_baru(cetak=True)
 
 
+def menu_10():
+    if not riwayat:
+        print("Peringatan: jalankan Algoritma Genetika dulu di menu 3!")
+        return
+    maks = len(riwayat) - 1
+    pilih = input(f"Lihat generasi ke berapa? (0-{maks}): ").strip()
+    if not pilih.isdigit() or int(pilih) > maks:
+        print(f"Masukkan angka 0 sampai {maks}.")
+        return
+    g = int(pilih)
+    pop_g = riwayat[g]
+    print(f"\nDETAIL POPULASI GENERASI {g} (Target: {target})")
+    print("Individu | Kromosom | Huruf Benar | Fitness")
+    for i, ind in enumerate(pop_g, 1):
+        cocok, nilai = hitung_fitness_individu(ind)
+        print(f"I{i:<7} | {ind:<8} | {cocok:<11} | {nilai:.2f}")
+    terbaik_g = max(pop_g, key=lambda ind: hitung_fitness_individu(ind)[1])
+    cocok_t, nilai_t = hitung_fitness_individu(terbaik_g)
+    print(f"Terbaik generasi {g}: {terbaik_g} | Fitness: {nilai_t:.4f}")
+
+
 def main():
     while True:
-        print("\n==============================================")
+        print("----------------------------------------------")
         print("ALGORITMA GENETIKA - KAMUS BAHASA MORONENE")
-        print("==============================================")
+        print("----------------------------------------------")
         print("1.  Tampilkan Kamus")
         print("2.  Cari Kata")
         print("3.  Jalankan Algoritma Genetika")
@@ -363,8 +408,9 @@ def main():
         print("7.  Cross Over")
         print("8.  Mutasi")
         print("9.  Generasi Baru")
-        print("10. Keluar")
-        pilih = input("Pilih menu (1-10): ").strip()
+        print("10. Lihat Generasi Tertentu")
+        print("11. Keluar")
+        pilih = input("Pilih menu (1-11): ").strip()
         if pilih == "1":
             menu_1()
         elif pilih == "2":
@@ -384,6 +430,8 @@ def main():
         elif pilih == "9":
             menu_9()
         elif pilih == "10":
+            menu_10()
+        elif pilih == "11":
             print("Program selesai. Terima kasih.")
             break
         else:
